@@ -33,13 +33,9 @@ SnapshotBreak class >> to: aFileName [
 
 { #category : #'priv handling' }
 SnapshotBreak >> defaultAction [
-
-	[ self hasTooMany
-		ifTrue: [ Smalltalk snapshot: true andQuit: true ]
-		ifFalse: [ 
-			Smalltalk saveAs: fileName.
-			Smalltalk snapshot: true andQuit: true ] ] fork.
-	super defaultAction
+	self hasTooMany
+		ifTrue: [ self terminate ]
+		ifFalse: [ self saveImageAndTerminateCurrentProcess ]
 ]
 
 { #category : #actions }
@@ -70,4 +66,16 @@ SnapshotBreak >> hasTooMany [
 SnapshotBreak >> imageEntries [
 	^ self destinationDirectory entries
 		select: [ :each | each extension = 'image' ]
+]
+
+{ #category : #'priv handling' }
+SnapshotBreak >> saveImageAndTerminateCurrentProcess [
+	[ Smalltalk saveAs: fileName.
+	Processor activeProcess terminate ] fork.
+	super defaultAction
+]
+
+{ #category : #actions }
+SnapshotBreak >> terminate [
+	Processor activeProcess terminate
 ]
