@@ -13,6 +13,15 @@ Class {
 }
 
 { #category : #accessing }
+SnapshotBreak class >> maxHistory [
+	"Answer the maximum number of images to keep in the destination folder."
+
+	^ OSEnvironment current
+		at: 'MAX_SNAPSHOTBREAK_IMAGES'
+		ifAbsent: [ 5 ]
+]
+
+{ #category : #accessing }
 SnapshotBreak class >> to: aFileName [
 	"Signal a new exception of self saving a snapshot of 
 	this image halted on the process that signalled it."
@@ -24,9 +33,20 @@ SnapshotBreak class >> to: aFileName [
 
 { #category : #'priv handling' }
 SnapshotBreak >> defaultAction [
-	[ Smalltalk saveAs: fileName.
-	Smalltalk snapshot: true andQuit: true ] fork.
+
+	[ self hasTooMany
+		ifTrue: [ Smalltalk snapshot: true andQuit: true ]
+		ifFalse: [ 
+			Smalltalk saveAs: fileName.
+			Smalltalk snapshot: true andQuit: true ] ] fork.
 	super defaultAction
+]
+
+{ #category : #actions }
+SnapshotBreak >> destinationDirectory [
+	"Answers the directory file reference where the snapshot will be saved."
+
+	^ fileName asFileReference parent
 ]
 
 { #category : #accessing }
@@ -37,4 +57,17 @@ SnapshotBreak >> fileName [
 { #category : #accessing }
 SnapshotBreak >> fileName: anObject [
 	fileName := anObject
+]
+
+{ #category : #testing }
+SnapshotBreak >> hasTooMany [
+	"Answers true if there are too many snapshots."
+
+	^ self imageEntries size > self class maxHistory
+]
+
+{ #category : #accessing }
+SnapshotBreak >> imageEntries [
+	^ self destinationDirectory entries
+		select: [ :each | each extension = 'image' ]
 ]
