@@ -28,17 +28,17 @@ SnapshotBreak class >> to: aFileName [
 
 	^ self new
 		fileName: aFileName;
-		signal
+		break
 ]
 
 { #category : #'priv handling' }
-SnapshotBreak >> defaultAction [
-	self hasTooMany
-		ifTrue: [ self terminate ]
-		ifFalse: [ self saveImageAndTerminateCurrentProcess ]
+SnapshotBreak >> break [
+	^ self hasTooMany
+		ifTrue: [ super defaultAction ]
+		ifFalse: [ self saveImageAndBreak ]
 ]
 
-{ #category : #actions }
+{ #category : #accessing }
 SnapshotBreak >> destinationDirectory [
 	"Answers the directory file reference where the snapshot will be saved."
 
@@ -64,18 +64,16 @@ SnapshotBreak >> hasTooMany [
 
 { #category : #accessing }
 SnapshotBreak >> imageEntries [
-	^ self destinationDirectory entries
-		select: [ :each | each extension = 'image' ]
-]
-
-{ #category : #'priv handling' }
-SnapshotBreak >> saveImageAndTerminateCurrentProcess [
-	[ Smalltalk saveAs: fileName.
-	Processor activeProcess terminate ] fork.
-	super defaultAction
+	^ self destinationDirectory exists
+		ifFalse: [ #() ]
+		ifTrue: [ self destinationDirectory entries
+				select: [ :each | each extension = 'image' ] ]
 ]
 
 { #category : #actions }
-SnapshotBreak >> terminate [
-	Processor activeProcess terminate
+SnapshotBreak >> saveImageAndBreak [
+	self destinationDirectory ensureCreateDirectory.
+	[ Smalltalk saveAs: fileName ] fork.
+	1 second asDelay wait.
+	^ super defaultAction 
 ]
